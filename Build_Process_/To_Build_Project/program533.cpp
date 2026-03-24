@@ -1,0 +1,263 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Header File Inclusion
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<stdbool.h>
+#include<string.h>
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  User Defined Macros
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Maximum file size that we allow in the project
+#define MAXFILESIZE 50
+
+// Maximum file that we are open at a time 
+#define MAXOPENFILES 20
+
+// Maximum inode 
+#define MAXINODE 5
+
+// FILE READ RWITE PERMISSION
+#define READ 1
+#define WRITE 2
+#define EXECUTE 4
+
+//
+#define START 0
+#define CURRENT 1
+#define END 2
+
+//
+#define EXECUTE_SUCCESS 0
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  User defined Structures
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Structure Name :    BootBlock
+//  Description    :    Holds the information to boot the OS
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+struct BootBlock
+{
+    char Information[100];
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Structure Name      :    SuperBlock
+//  Description         :    Holds the information about the file System
+//  Structure Member    :    int TotalInodes;
+//                           int FreeInodes; 
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SuperBlock
+{
+    int TotalInodes;
+    int FreeInodes;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Structure Name      :    Inode
+//  Description         :    Holds the information about the File
+//  Structure Member    :    char FileName[20];
+//                           int iNodeNumber;
+//                           int FileSize;
+//                           int ActualFilesize;
+//                           struct Inode *next;
+//                           int RefrenceCount;
+//                           int RPermission;
+//                           char *Buffer;
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma pack(1)
+struct Inode
+{
+    char FileName[20];
+    int InodeNumber;
+    int FileSize;
+    int ActualFilesize;
+    int RefrenceCount;
+    int Permission;
+    char *Buffer;                  // Data block
+    struct Inode *next;
+};
+
+typedef struct Inode INODE; 
+typedef struct Inode * PINODE; 
+typedef struct Inode ** PPINODE; 
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Structure Name      :    FileTable
+//  Description         :    Holds the information about the opend file
+//  Structure Member    :    int ReadOffset;
+//                           int WriteOffset;
+//                           int Mode;
+//                           PINODE ptrinode;
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+struct FileTable
+{
+    int ReadOffset;
+    int WriteOffset;
+    int Mode;
+    PINODE ptrinode;
+};
+
+typedef FileTable FILETABLE;
+typedef FileTable * PFILETABLE;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Structure Name      :    UAREA
+//  Description         :    Holds the information about the process file
+//  Structure Member    :    char ProcessName[20];
+//                           PFILETABLE UFDT[MAXOPENFILES]; 
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+struct UAREA
+{
+    char ProcessName[20];
+    PFILETABLE UFDT[MAXOPENFILES]; 
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Globle variable or objects used in the project
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BootBlock bootobj;
+SuperBlock superobj;
+UAREA uareobj;
+
+PINODE head = NULL;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name   :   InitialiseUAREA
+//  Description     :   it is Used to Initialise UAREA members
+//  Author          :   Vivek Bhauraj Gautam
+//  Date            :   13/01/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+void InitialiseUAREA()
+{
+    strcpy(uareobj.ProcessName,"Myexe");
+    
+    int i = 0;
+    
+    for(i = 0; i < MAXOPENFILES; i++)
+    {
+        uareobj.UFDT[i] = NULL;
+    }
+
+    printf("Marvellous CVFS : UAREA get initialized succesfullay\n");
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name   :   InitialiseSuperBlock
+//  Description     :   it is Used to Initialise Super members
+//  Author          :   Vivek Bhauraj Gautam
+//  Date            :   13/01/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+void InitialiseSuperBlock()
+{
+    superobj.TotalInodes = MAXINODE;
+    superobj.FreeInodes = MAXINODE;
+
+    printf("Marvellous CVFS : Super blocks get initialize succesfullay\n");
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name   :   CreateDILB
+//  Description     :   it is Used to create LinkedList of inodes
+//  Author          :   Vivek Bhauraj Gautam
+//  Date            :   13/01/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+void CreateDILB()
+{
+    int i = 1;
+    PINODE newn = NULL;
+    PINODE temp = head;
+
+    for(i = 1; i <= MAXINODE; i++)
+    {
+        newn = (PINODE)malloc(sizeof(INODE));
+
+        strcpy(newn->FileName, "\0");
+        newn-> InodeNumber = i;
+        newn-> FileSize = 0;
+        newn-> ActualFilesize = 0;
+        newn-> RefrenceCount = 0;
+        newn-> Permission = 0;
+        newn-> Buffer  = NULL;            // Data block
+        newn-> next = NULL;
+
+        if(temp == NULL)           // LL is empty
+        {
+            head = newn;
+            temp = head;
+        }
+        else                        // LL contain at least one
+        {
+            temp->next = newn;
+            temp = temp->next;
+        }
+    }
+
+    printf("Marvellous CVFS : DILB created succesfully\n");
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name   :   StartAuxillaryDataInitialisation
+//  Description     :   it is Used to call such function which are 
+//                      used to inicialise auxilary data
+//  Author          :   Vivek Bhauraj Gautam
+//  Date            :   13/01/2026
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+void StartAuxillaryDataInitialisation()
+{
+    strcpy(bootobj.Information,"Booting process of Marvellous CVFS is done");
+    printf("%s\n",bootobj.Information);
+
+    InitialiseSuperBlock();
+    CreateDILB();
+    InitialiseUAREA();
+
+    printf("Marvellous CVFS : Auxilary Data initialised succesfullay\n");
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Function Name : Main (Entry point of the project)
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+int main()
+{
+    StartAuxillaryDataInitialisation();
+
+    return 0;
+}

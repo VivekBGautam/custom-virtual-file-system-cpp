@@ -1,0 +1,201 @@
+Below is a clear, exam-oriented explanation of your Custom Virtual File System (VFS) skeleton code, section by section.
+This matches the way your previous project documentation questions were asked.
+
+1️⃣ Header File Inclusion
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<stdbool.h>
+#include<string.h>
+
+Purpose
+
+These headers provide basic system-level support required to implement a virtual file system.
+
+Header	Purpose
+stdio.h	Input/output operations
+stdlib.h	Memory allocation (malloc, free)
+unistd.h	POSIX system calls
+stdbool.h	Boolean data type (true, false)
+string.h	String manipulation
+2️⃣ User Defined Macros
+#define MAXFILESIZE 50
+#define MAXOPENFILES 20
+#define MAXINODE 5
+
+Purpose
+
+These macros define system limits of the virtual file system.
+
+Macro	Meaning
+MAXFILESIZE	Maximum size of a file
+MAXOPENFILES	Maximum files opened simultaneously
+MAXINODE	Total number of files supported
+File Permission Macros
+#define READ 1
+#define WRITE 2
+#define EXECUTE 4
+
+Purpose
+
+These represent UNIX-style file permissions using bitwise values.
+
+Permission	Value
+Read	1
+Write	2
+Execute	4
+File Offset Macros
+#define START 0
+#define CURRENT 1
+#define END 2
+
+Purpose
+
+Used for file pointer movement (similar to lseek()).
+
+Execution Status
+#define EXECUTE_SUCCESS 0
+
+
+Indicates successful execution of a function.
+
+3️⃣ BootBlock Structure
+struct BootBlock
+{
+    char Information[100];
+};
+
+Purpose
+
+Stores boot-related information of the virtual file system.
+
+Simulates OS boot block data.
+
+4️⃣ SuperBlock Structure
+struct SuperBlock
+{
+    int TotalInodes;
+    int FreeInodes;
+};
+
+Purpose
+
+Maintains overall file system metadata
+
+Tracks inode usage
+
+Member	Description
+TotalInodes	Total files allowed
+FreeInodes	Available files
+5️⃣ Inode Structure (Core of File System)
+struct Inode
+{
+    char FileName[20];
+    int iNodeNumber;
+    int FileSize;
+    int ActualFilesize;
+    int RefrenceCount;
+    int Permission;
+    char *Buffer;
+    struct Inode *next;
+};
+
+Purpose
+
+Each inode represents one file in the virtual file system.
+
+Member	Meaning
+FileName	Name of the file
+iNodeNumber	Unique file ID
+FileSize	Maximum allowed size
+ActualFilesize	Current used size
+RefrenceCount	Number of open references
+Permission	Read / Write / Execute
+Buffer	Actual file data
+next	Linked list connection
+
+🔹 #pragma pack(1) avoids memory padding.
+
+Typedefs for Inode
+typedef struct Inode INODE;
+typedef struct Inode * PINODE;
+typedef struct Inode ** PPINODE;
+
+Purpose
+
+Simplifies pointer usage and improves code readability.
+
+6️⃣ FileTable Structure
+struct FileTable
+{
+    int ReadOffset;
+    int WriteOffset;
+    int Mode;
+    PINODE ptrinode;
+};
+
+Purpose
+
+Stores information about opened files.
+
+Member	Description
+ReadOffset	Read position
+WriteOffset	Write position
+Mode	Open mode
+ptrinode	Pointer to inode
+7️⃣ UAREA Structure
+struct UAREA
+{
+    char ProcessName[20];
+    PFILETABLE UFDT[MAXOPENFILES]; 
+};
+
+Purpose
+
+Simulates User File Descriptor Table (UFDT) like UNIX OS.
+
+Member	Description
+ProcessName	Process name
+UFDT[]	Array of open file tables
+8️⃣ Global Objects
+BootBlock bootobj;
+SuperBlock superobj;
+UAREA uareobj;
+PINODE head = NULL;
+
+Purpose
+
+These are global structures required throughout the project.
+
+Object	Role
+bootobj	Boot information
+superobj	File system metadata
+uareobj	Process file info
+head	Inode linked list head
+9️⃣ Main Function
+int main()
+{
+    return 0;
+}
+
+Purpose
+
+Entry point of the project
+
+Will later contain VFS command logic
+
+🔟 Overall Purpose of This Code
+
+✔️ This code creates the foundation of a Custom Virtual File System
+✔️ Mimics UNIX file system internals
+✔️ Supports:
+
+File creation
+
+File opening
+
+Permissions
+
+File descriptors
+
+Inode management
